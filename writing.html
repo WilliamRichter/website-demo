@@ -1,58 +1,79 @@
-<main>
-  <section class="hero" aria-labelledby="post-title">
-    <div>
-      <p class="eyebrow">Essay / personal note</p>
-      <h1 id="post-title">My mother died today.</h1>
-      <p class="intro">
-        Or maybe yesterday, I don't know.
-      </p>
-    </div>
+<section class="model-card">
+  <div class="controls">
+    <label>
+      Starting price
+      <input id="startPrice" type="number" value="50">
+    </label>
 
-    <aside class="card" aria-label="About this text">
-      <strong>Note</strong>
-      <p>
-        A short description of the piece. One or two sentences that set the mood.
-      </p>
-      <div class="status">
-        <span class="dot"></span>
-        Draft / unfinished / whatever fits
-      </div>
-    </aside>
-  </section>
+    <label>
+      Daily volatility
+      <input id="volatility" type="range" min="0.005" max="0.08" step="0.005" value="0.02">
+      <span id="volLabel">2.0%</span>
+    </label>
 
-  <section class="text-section">
-    <p class="section-label">01</p>
-    <h2>The opening thought</h2>
-    <p>
-      Put your text here. This can be one paragraph or several. The idea is that
-      each section feels like a small room in the article.
-    </p>
-    <p>
-      More text here. Keep it loose, readable, and not too “blog template”-ish.
-    </p>
-  </section>
+    <button onclick="simulate()">Simulate again</button>
+  </div>
 
-  <section class="text-section">
-    <p class="section-label">02</p>
-    <h2>Another angle</h2>
-    <p>
-      Continue the essay here. This section can shift the tone, introduce a memory,
-      make an argument, or just slow the reader down.
-    </p>
-  </section>
+  <div id="graph"></div>
+</section>
 
-  <section class="quote-block">
-    <p>
-      “A sentence you want the reader to sit with.”
-    </p>
-  </section>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
-  <section class="text-section">
-    <p class="section-label">03</p>
-    <h2>What I think now</h2>
-    <p>
-      Final section text. This gives the page a rhythm: title, section, section,
-      quote, section.
-    </p>
-  </section>
-</main>
+<script>
+  const volInput = document.getElementById("volatility");
+  const volLabel = document.getElementById("volLabel");
+
+  volInput.addEventListener("input", () => {
+    volLabel.textContent = `${(volInput.value * 100).toFixed(1)}%`;
+  });
+
+  function randomNormal() {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();
+    while (v === 0) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function simulate() {
+    const startPrice = Number(document.getElementById("startPrice").value);
+    const volatility = Number(document.getElementById("volatility").value);
+
+    const steps = 252;
+    const paths = 100;
+    const x = Array.from({ length: steps }, (_, i) => i);
+
+    const traces = [];
+
+    for (let p = 0; p < paths; p++) {
+      const y = [startPrice];
+
+      for (let t = 1; t < steps; t++) {
+        const randomReturn = randomNormal() * volatility;
+        y.push(y[t - 1] * (1 + randomReturn));
+      }
+
+      traces.push({
+        x: x,
+        y: y,
+        mode: "lines",
+        type: "scatter",
+        line: { width: 1 },
+        opacity: 0.35,
+        hoverinfo: "skip",
+        showlegend: false
+      });
+    }
+
+    Plotly.newPlot("graph", traces, {
+      margin: { t: 20, r: 20, b: 40, l: 50 },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(255,247,230,0.35)",
+      xaxis: { title: "Day" },
+      yaxis: { title: "Price" }
+    }, {
+      responsive: true
+    });
+  }
+
+  simulate();
+</script>
